@@ -30,9 +30,15 @@ services:
       db:
         condition: service_healthy
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=CrimeDB;Username=postgres;Password=1234A"
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=CrimeDB;Username=postgres;Password=1234A
+      - EmailSettings__SmtpServer=localhost
+      - EmailSettings__SmtpPort=25
+      - EmailSettings__Username=noreply@crimeapi.com
+      - EmailSettings__FromEmail=noreply@crimeapi.com
+      - EmailSettings__Password=dummy
+      - EmailSettings__EnableSsl=false
     ports:
       - "8080:8080"
     restart: always
