@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  #  PostgreSQL Database
+  db:
+    image: postgres:16
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234A
+      POSTGRES_DB: CrimeDB
+    ports:
+      - "5433:5432"            # Host:Container (use 5433 to avoid conflict with local Postgres)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  #  ASP.NET Core API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crime_api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=CrimeDB;Username=postgres;Password=1234A"
+    ports:
+      - "8080:8080"
+    restart: always
+
+volumes:
+  postgres_data:

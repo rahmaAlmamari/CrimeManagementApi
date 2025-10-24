@@ -1,0 +1,6 @@
+@CrimeManagementApi_HostAddress = http://localhost:5069
+
+GET {{CrimeManagementApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

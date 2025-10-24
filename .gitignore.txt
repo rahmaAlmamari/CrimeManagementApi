@@ -1,0 +1,34 @@
+﻿# Visual Studio & Build Artifacts
+.vs/
+bin/
+obj/
+out/
+*.user
+*.suo
+*.cache
+*.log
+*.dbmdl
+*.db
+*.db-shm
+*.db-wal
+
+# ASP.NET / EF Migrations
+Migrations/
+
+# Docker
+postgres_data/
+**/Dockerfile
+**/docker-compose.override.yml
+
+# Logs
+Logs/
+
+# Secrets & Configs
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+.env
+
+# OS Junk
+Thumbs.db
+*.DS_Store
