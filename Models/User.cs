@@ -53,6 +53,11 @@ namespace CrimeManagementApi.Models
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        /// <summary>
+        /// Optional phone number for contact purposes.
+        /// </summary>
+        public string? PhoneNumber { get; set; }
+
         // 🔹 Navigation Properties
         public ICollection<Case>? CreatedCases { get; set; }
         public ICollection<Evidence>? AddedEvidence { get; set; }
