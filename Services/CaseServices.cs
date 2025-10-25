@@ -14,12 +14,14 @@ namespace CrimeManagementApi.Services
         private readonly AppDbContext _context;
         private readonly IMapper _mapper;
         private readonly IEmailService _emailService;
+        private readonly ISmsService _smsService;
 
-        public CaseService(AppDbContext context, IMapper mapper, IEmailService emailService)
+        public CaseService(AppDbContext context, IMapper mapper, IEmailService emailService, ISmsService smsService)
         {
             _context = context;
             _mapper = mapper;
             _emailService = emailService;
+            _smsService = smsService;
         }
 
 
@@ -48,7 +50,7 @@ namespace CrimeManagementApi.Services
             _context.Cases.Add(entity);
             await _context.SaveChangesAsync();
 
-            //  Notify citizens of new case in their city
+            //  Notify citizens of new case in their city via Email
             var citizens = await _context.Users
                 .Where(u => u.Role == "Citizen")
                 .ToListAsync();
@@ -62,14 +64,38 @@ namespace CrimeManagementApi.Services
                 );
             }
 
+            // 🔹 NEW: Send SMS notifications to assigned officers
+            if (entity.Assignees != null && entity.Assignees.Any())
+            {
+                foreach (var assignee in entity.Assignees)
+                {
+                    var officer = await _context.Users.FindAsync(assignee.UserId);
+                    if (officer != null && !string.IsNullOrEmpty(officer.PhoneNumber))
+                    {
+                        await _smsService.SendNewCaseAssignmentSmsAsync(
+                            officer.PhoneNumber,
+                            entity.CaseNumber,
+                            officer.FullName
+                        );
+                    }
+                }
+            }
+
             return _mapper.Map<CaseDto>(entity);
         }
 
 
         public async Task<CaseDto?> UpdateAsync(int id, UpdateCaseDto dto)
         {
-            var existingCase = await _context.Cases.FindAsync(id);
+            var existingCase = await _context.Cases
+                .Include(c => c.Assignees)
+                .ThenInclude(a => a.User)
+                .Include(c => c.CreatedByUser)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
             if (existingCase == null) return null;
+
+            string? oldStatus = existingCase.Status;
 
             // Apply updates only for fields that are not null
             if (!string.IsNullOrWhiteSpace(dto.Name))
@@ -81,10 +107,8 @@ namespace CrimeManagementApi.Services
             if (!string.IsNullOrWhiteSpace(dto.CaseType))
                 existingCase.CaseType = dto.CaseType;
 
-
             if (dto.ClearanceLevel.HasValue)
                 existingCase.ClearanceLevel = dto.ClearanceLevel.Value;
-
 
             if (!string.IsNullOrWhiteSpace(dto.Status))
                 existingCase.Status = dto.Status;
@@ -93,6 +117,36 @@ namespace CrimeManagementApi.Services
                 existingCase.AreaCity = dto.AreaCity;
 
             await _context.SaveChangesAsync();
+
+            // 🔹 NEW: Send SMS notification for status changes
+            if (!string.IsNullOrWhiteSpace(dto.Status) && dto.Status != oldStatus)
+            {
+                // Notify assigned officers
+                if (existingCase.Assignees != null)
+                {
+                    foreach (var assignee in existingCase.Assignees)
+                    {
+                        if (!string.IsNullOrEmpty(assignee.User?.PhoneNumber))
+                        {
+                            await _smsService.SendCaseUpdateSmsAsync(
+                                assignee.User.PhoneNumber,
+                                existingCase.CaseNumber,
+                                existingCase.Status
+                            );
+                        }
+                    }
+                }
+
+                // Notify case creator if they have a phone number
+                if (existingCase.CreatedByUser != null && !string.IsNullOrEmpty(existingCase.CreatedByUser.PhoneNumber))
+                {
+                    await _smsService.SendCaseUpdateSmsAsync(
+                        existingCase.CreatedByUser.PhoneNumber,
+                        existingCase.CaseNumber,
+                        existingCase.Status
+                    );
+                }
+            }
 
             return _mapper.Map<CaseDto>(existingCase);
         }
@@ -204,6 +258,5 @@ namespace CrimeManagementApi.Services
                 WitnessCount = witnesses
             };
         }
-
     }
 }
