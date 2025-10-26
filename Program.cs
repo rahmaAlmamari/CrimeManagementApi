@@ -75,6 +75,17 @@ builder.Services.AddScoped<IParticipantService, ParticipantService>();
 builder.Services.AddScoped<ICaseParticipantService, CaseParticipantService>();
 builder.Services.AddScoped<ICaseReportService, CaseReportService>();
 
+
+//=======================================================
+// Add Twilio configuration
+builder.Services.Configure<TwilioSettings>(
+    builder.Configuration.GetSection("TwilioSettings"));
+
+// Register SMS service
+builder.Services.AddScoped<ISmsService, TwilioSmsService>();
+
+
+
 // ======================================================
 // 🔹 Email Configuration (SMTP)
 // ======================================================

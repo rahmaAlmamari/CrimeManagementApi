@@ -8,10 +8,10 @@ services:
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1234A
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-1234A}
       POSTGRES_DB: CrimeDB
     ports:
-      - "5433:5432"            # Host:Container (use 5433 to avoid conflict with local Postgres)
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -32,16 +32,17 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=CrimeDB;Username=postgres;Password=1234A
-      - EmailSettings__SmtpServer=localhost
-      - EmailSettings__SmtpPort=25
-      - EmailSettings__Username=noreply@crimeapi.com
-      - EmailSettings__FromEmail=noreply@crimeapi.com
-      - EmailSettings__Password=dummy
-      - EmailSettings__EnableSsl=false
+      - DB_PASSWORD=${DB_PASSWORD:-1234A}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     ports:
       - "8080:8080"
     restart: always
+    env_file:
+      - .env
 
 volumes:
   postgres_data:
