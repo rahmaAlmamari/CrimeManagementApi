@@ -27,8 +27,17 @@ Console.WriteLine(BCrypt.Net.BCrypt.HashPassword("Admin@123"));
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 🔹 DEBUG: Check which configuration is loaded
+Console.WriteLine("============================================");
+Console.WriteLine($"🔹 Environment: {builder.Environment.EnvironmentName}");
+Console.WriteLine($"🔹 Connection String: {builder.Configuration.GetConnectionString("DefaultConnection")}");
+Console.WriteLine($"🔹 DB_PASSWORD env var: {Environment.GetEnvironmentVariable("DB_PASSWORD")}");
+Console.WriteLine("============================================");
+
+// 🔹 FIX: Add Development appsettings loading
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
 // ======================================================
@@ -43,12 +52,12 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // ======================================================
-// 🔹 Database (PostgreSQL)
+// 🔹 Database (PostgreSQL) - ADD RETRY LOGIC
 // ======================================================
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-
+// REST OF YOUR CODE STAYS THE SAME...
 builder.Services.AddHttpContextAccessor();
 
 // ======================================================
@@ -75,7 +84,6 @@ builder.Services.AddScoped<IParticipantService, ParticipantService>();
 builder.Services.AddScoped<ICaseParticipantService, CaseParticipantService>();
 builder.Services.AddScoped<ICaseReportService, CaseReportService>();
 
-
 //=======================================================
 // Add Twilio configuration
 builder.Services.Configure<TwilioSettings>(
@@ -83,8 +91,6 @@ builder.Services.Configure<TwilioSettings>(
 
 // Register SMS service
 builder.Services.AddScoped<ISmsService, TwilioSmsService>();
-
-
 
 // ======================================================
 // 🔹 Email Configuration (SMTP)
@@ -108,7 +114,6 @@ builder.Services.AddStackExchangeRedisCache(options =>
 // 🔹 Controllers, AutoMapper, JSON, Compression
 // ======================================================
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
-
 
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
@@ -181,7 +186,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     // Allow non-nullable reference types
-
     c.SupportNonNullableReferenceTypes();
 
     // Enable file upload UI in Swagger

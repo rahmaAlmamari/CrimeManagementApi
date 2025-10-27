@@ -6,9 +6,11 @@ services:
     image: postgres:16
     container_name: postgres_db
     restart: always
+    env_file:
+      - .env
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-1234A}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: CrimeDB
     ports:
       - "5433:5432"
@@ -29,10 +31,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - DB_PASSWORD=${DB_PASSWORD:-1234A}
+      - ASPNETCORE_ENVIRONMENT=Development 
+      - DB_PASSWORD=${DB_PASSWORD}
       - EMAIL_PASSWORD=${EMAIL_PASSWORD}
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
@@ -41,8 +45,6 @@ services:
     ports:
       - "8080:8080"
     restart: always
-    env_file:
-      - .env
 
 volumes:
   postgres_data:
